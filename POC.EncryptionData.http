@@ -1,0 +1,6 @@
+@POC.EncryptionData_HostAddress = http://localhost:5198
+
+GET {{POC.EncryptionData_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
