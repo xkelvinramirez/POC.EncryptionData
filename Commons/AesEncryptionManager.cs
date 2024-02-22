@@ -6,48 +6,93 @@ namespace POC.EncryptionData.Common
 {
     public static class AesEncryptionManager
     {
-        public static byte[] Encrypt(string plaintext, byte[] key, byte[] iv)
+        internal static readonly byte[] Key1 = new byte[32] // 32 bytes = 256-bit.
         {
-            using (Aes aesAlg = Aes.Create())
+            73, 84, 28, 39, 182, 122, 193, 73, 43, 71, 106, 142, 76, 16, 54, 19, 21, 115, 138, 75, 45, 114, 41, 79, 181, 196, 40, 148, 154, 81, 173, 56
+        };
+
+        public static string generateKeyAes()
+        {
+            #region v1
+            byte[] key = new byte[32]; // 256-bit key
+            byte[] iv = new byte[16]; // 128-bit IV
+            using (var rng = RandomNumberGenerator.Create())
             {
-                aesAlg.Key = key;
-                aesAlg.IV = iv;
-                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
-                byte[] encryptedBytes;
-                using (var msEncrypt = new System.IO.MemoryStream())
-                {
-                    using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
-                    {
-                        byte[] plainBytes = Encoding.UTF8.GetBytes(plaintext);
-                        csEncrypt.Write(plainBytes, 0, plainBytes.Length);
-                    }
-                    encryptedBytes = msEncrypt.ToArray();
-                }
-                return encryptedBytes;
+                rng.GetBytes(key);
+                rng.GetBytes(iv);
             }
+            #endregion
+
+            #region v2
+            string keyBase64Key = string.Empty;
+            //"Creating Aes Encryption 256 bit key"
+            using (Aes aesAlgorithm = Aes.Create())
+            {
+                aesAlgorithm.KeySize = 256;
+                aesAlgorithm.GenerateKey();
+                keyBase64Key = Convert.ToBase64String(aesAlgorithm.Key);
+                Console.WriteLine($"Aes Key Size : {aesAlgorithm.KeySize}");
+                Console.WriteLine($"keyBase64Key Size : {keyBase64Key.Length}");
+                Console.WriteLine("Here is the Aes key in Base64:");
+                Console.WriteLine(keyBase64Key);
+            }
+            #endregion
+
+            return keyBase64Key;
+        }
+        public static async Task<byte[]> Encrypt(string plaintext)
+        {
+            var taskEncrypt = Task.Run(() =>
+            {
+                byte[] iv_ = new byte[16];
+                using (Aes aesAlg = Aes.Create())
+                {
+                    aesAlg.Key = Key1;
+                    aesAlg.IV = iv_;
+                    ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+                    byte[] encryptedBytes;
+                    using (var msEncrypt = new System.IO.MemoryStream())
+                    {
+                        using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                        {
+                            byte[] plainBytes = Encoding.UTF8.GetBytes(plaintext);
+                            csEncrypt.Write(plainBytes, 0, plainBytes.Length);
+                        }
+                        encryptedBytes = msEncrypt.ToArray();
+                    }
+                    return encryptedBytes;
+                }
+            });
+            return await taskEncrypt;
         }
 
-        public static string Decrypt(byte[] ciphertext, byte[] key, byte[] iv)
+        public static async Task<string> Decrypt(byte[] ciphertext)
         {
-            using (Aes aesAlg = Aes.Create())
+            var taskDecrypt = Task.Run(() =>
             {
-                aesAlg.Key = key;
-                aesAlg.IV = iv;
-                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
-                byte[] decryptedBytes;
-                using (var msDecrypt = new System.IO.MemoryStream(ciphertext))
+                byte[] iv_ = new byte[16];
+                using (Aes aesAlg = Aes.Create())
                 {
-                    using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                    aesAlg.Key = Key1;
+                    aesAlg.IV = iv_;
+                    ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+                    byte[] decryptedBytes;
+                    using (var msDecrypt = new System.IO.MemoryStream(ciphertext))
                     {
-                        using (var msPlain = new System.IO.MemoryStream())
+                        using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
                         {
-                            csDecrypt.CopyTo(msPlain);
-                            decryptedBytes = msPlain.ToArray();
+                            using (var msPlain = new System.IO.MemoryStream())
+                            {
+                                csDecrypt.CopyTo(msPlain);
+                                decryptedBytes = msPlain.ToArray();
+                            }
                         }
                     }
+                    return Encoding.UTF8.GetString(decryptedBytes);
                 }
-                return Encoding.UTF8.GetString(decryptedBytes);
-            }
+            });
+
+            return await taskDecrypt;
         }
 
 
@@ -56,7 +101,7 @@ namespace POC.EncryptionData.Common
         #region old
         private static readonly string Key = "tu_clave_secreta_de_32_bytes";
         private static readonly string IV = "tu_vector_de_inicializacion_de_16_bytes";
-        public static string Encrypt(string plainText)
+        public static string Encrypt_old(string plainText)
         {
             using (Aes aesAlg = Aes.Create())
             {
