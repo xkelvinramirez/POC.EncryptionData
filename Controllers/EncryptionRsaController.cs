@@ -19,15 +19,6 @@ namespace POC.EncryptionData.Controllers
             return Ok(new { EncryptedText = encryptedText });
         }
 
-        [HttpPost]
-        [Route("encryptBase64")]
-
-        public async Task<ActionResult> EncryptBase64(EncryptionDto value)
-        {
-            var encryptedText = await RsaEncryptionManager.EncryptRSA(ProjectConstants.RSA_KEY_PUBLIC, value.strBase64);
-
-            return Ok(new { EncryptedText = encryptedText });
-        }
 
         [HttpGet]
         [Route("decrypt")]

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using POC.EncryptionData.Common;
 using POC.EncryptionData.Commons.Constants;
+using POC.EncryptionData.Dtos;
 
 namespace POC.EncryptionData.Controllers
 {
@@ -14,6 +15,17 @@ namespace POC.EncryptionData.Controllers
         public async Task<ActionResult> Encrypt(string strValue)
         {
             var signature = await EccEncryptionManager.SignECC(ProjectConstants.ECC_KEY_PRIVATE, strValue);
+
+            return Ok(new { Signature = signature });
+
+        }
+
+        [HttpPost]
+        [Route("encryptBase64")]
+
+        public async Task<ActionResult> EncryptBase64(EncryptionDto value)
+        {
+            var signature = await EccEncryptionManager.SignECC(ProjectConstants.ECC_KEY_PRIVATE, value.strBase64);
 
             return Ok(new { Signature = signature });
 
